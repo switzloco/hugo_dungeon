@@ -202,17 +202,18 @@
                 return;
             }
 
-            if (player.vy <= 0) return; // Only check when falling/moving down
+            // Don't check if we're on the ground
+            if (player.grounded) return;
 
             // Check each platform for ledge grab opportunity
             for (let platform of platforms) {
                 const playerHandsY = player.y; // Top of player character (hands position)
                 const playerCenterX = player.x + player.width / 2;
 
-                // Check if hands are at platform level
-                if (playerHandsY >= platform.y - 5 && playerHandsY <= platform.y + 10) {
-                    // Check if trying to grab left edge
-                    if (player.vx < 0 && playerCenterX >= platform.x - 10 && playerCenterX <= platform.x + 10) {
+                // Check if hands are near platform top (generous range for easier grabbing)
+                if (playerHandsY >= platform.y - 15 && playerHandsY <= platform.y + 15) {
+                    // Moving RIGHT: grab LEFT edge of platform ahead
+                    if (player.vx > 0 && playerCenterX >= platform.x - 15 && playerCenterX <= platform.x + 15) {
                         // Grab left edge
                         player.state = PlayerState.HANGING;
                         player.hangingPlatform = platform;
@@ -224,8 +225,8 @@
                         player.hangOffsetX = 0;
                         return true;
                     }
-                    // Check if trying to grab right edge
-                    else if (player.vx > 0 && playerCenterX >= platform.x + platform.width - 10 && playerCenterX <= platform.x + platform.width + 10) {
+                    // Moving LEFT: grab RIGHT edge of platform ahead
+                    else if (player.vx < 0 && playerCenterX >= platform.x + platform.width - 15 && playerCenterX <= platform.x + platform.width + 15) {
                         // Grab right edge
                         player.state = PlayerState.HANGING;
                         player.hangingPlatform = platform;
