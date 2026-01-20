@@ -1,0 +1,36 @@
+Initial prompt
+Act as a Senior Game Developer and an expert in HTML5 and JavaScript. I want you to build a Minimum Viable Product (MVP) of a 2D cinematic platformer game inspired by the mechanics of the original 1989 Prince of Persia.
+
+The Story & Character:
+
+The protagonist is a young adventurer named Hugo.
+
+The setting should feel like a dungeon or castle.
+
+Technical Stack:
+
+Use raw HTML5 Canvas and JavaScript.
+
+Keep everything in a single index.html file so I can run it immediately by opening it in a browser.
+
+Do not require external assets (images) yet; use colored rectangles to represent the character, tiles, and enemies for now (Placeholder graphics).
+
+Core Gameplay Mechanics (MVP Requirements):
+
+Movement: The character must have "weighty" movement (acceleration/deceleration), not instant arcade movement.
+
+Ledge Climbing: This is the most important Prince of Persia feature. If Hugo jumps and hits the edge of a platform, he should grab the ledge and pull himself up.
+
+Hazards: Include static spikes on the floor that reset the level if touched.
+
+Level Design: Create one short level with a starting point, a few gaps to jump, a ledge to climb, and a "Door" at the end that triggers a "Level Complete" message.
+
+Visual Style:
+
+Background: Dark grey/stone color.
+
+Hugo: A distinct color (e.g., Bright Blue or Red) so he stands out.
+
+Platforms: Bricks/stone texture (or solid color).
+
+Please write the complete, functional code for this MVP.
