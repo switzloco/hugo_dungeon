@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hugo's Dungeon - Cinematic Platformer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+        #gameContainer {
+            text-align: center;
+        }
+        canvas {
+            border: 3px solid #444;
+            background: #2a2a2a;
+            display: block;
+            margin: 0 auto;
+        }
+        #info {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        #message {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #4CAF50;
+            min-height: 25px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>Hugo's Dungeon</h1>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="message"></div>
+        <div id="info">
+            <p><strong>Controls:</strong> Arrow Keys to Move | SPACE to Jump | UP while hanging to Climb</p>
+            <p><strong>Objective:</strong> Reach the golden door! Avoid spikes! Master the ledge grab!</p>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GAME CONSTANTS ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageDiv = document.getElementById('message');
+
+        const GRAVITY = 0.6;
+        const ACCELERATION = 0.5;
+        const MAX_SPEED = 4;
+        const FRICTION = 0.85;
+        const JUMP_FORCE = -12;
+        const AIR_CONTROL = 0.3; // Reduced air control for more cinematic feel
+        const CLIMB_SPEED = 3;
+
+        // ==================== PLAYER STATE ====================
+        const PlayerState = {
+            IDLE: 'idle',
+            RUNNING: 'running',
+            JUMPING: 'jumping',
+            FALLING: 'falling',
+            HANGING: 'hanging',
+            CLIMBING: 'climbing'
+        };
+
+        // ==================== PLAYER OBJECT ====================
+        const player = {
+            x: 100,
+            y: 450,
+            width: 24,
+            height: 40,
+            vx: 0,
+            vy: 0,
+            state: PlayerState.IDLE,
+            facingRight: true,
+            grounded: false,
+            hangingPlatform: null,
+            hangOffsetX: 0
+        };
+
+        // ==================== LEVEL DATA ====================
+        const platforms = [
+            // Ground floor
+            { x: 0, y: 550, width: 300, height: 50 },
+
+            // First gap and platforms
+            { x: 400, y: 550, width: 150, height: 50 },
+            { x: 650, y: 550, width: 150, height: 50 },
+
+            // Mid-level platforms
+            { x: 200, y: 450, width: 120, height: 30 },
+            { x: 420, y: 400, width: 100, height: 30 },
+
+            // Upper platforms
+            { x: 100, y: 320, width: 150, height: 30 },
+            { x: 350, y: 280, width: 120, height: 30 },
+            { x: 580, y: 320, width: 150, height: 30 },
+
+            // Final platform with door
+            { x: 650, y: 200, width: 150, height: 30 }
+        ];
+
+        const spikes = [
+            { x: 300, y: 540, width: 100, height: 10 },
+            { x: 550, y: 540, width: 100, height: 10 },
+            { x: 320, y: 390, width: 100, height: 10 }
+        ];
+
+        const door = {
+            x: 720,
+            y: 160,
+            width: 30,
+            height: 40,
+            reached: false
+        };
+
+        // ==================== INPUT HANDLING ====================
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            space: false
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = true;
+            if (e.key === 'ArrowRight') keys.right = true;
+            if (e.key === 'ArrowUp') keys.up = true;
+            if (e.key === ' ') {
+                keys.space = true;
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = false;
+            if (e.key === 'ArrowRight') keys.right = false;
+            if (e.key === 'ArrowUp') keys.up = false;
+            if (e.key === ' ') keys.space = false;
+        });
+
+        // ==================== COLLISION DETECTION ====================
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function checkPlatformCollision() {
+            player.grounded = false;
+
+            platforms.forEach(platform => {
+                if (checkCollision(player, platform)) {
+                    // Calculate overlap on each side
+                    const overlapLeft = (player.x + player.width) - platform.x;
+                    const overlapRight = (platform.x + platform.width) - player.x;
+                    const overlapTop = (player.y + player.height) - platform.y;
+                    const overlapBottom = (platform.y + platform.height) - player.y;
+
+                    // Find minimum overlap
+                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                    if (minOverlap === overlapTop && player.vy >= 0) {
+                        // Landing on top
+                        player.y = platform.y - player.height;
+                        player.vy = 0;
+                        player.grounded = true;
+                        if (player.state === PlayerState.FALLING || player.state === PlayerState.JUMPING) {
+                            player.state = PlayerState.IDLE;
+                        }
+                    } else if (minOverlap === overlapBottom && player.vy < 0) {
+                        // Hit from below
+                        player.y = platform.y + platform.height;
+                        player.vy = 0;
+                    } else if (minOverlap === overlapLeft) {
+                        // Hit from left
+                        player.x = platform.x - player.width;
+                        player.vx = 0;
+                    } else if (minOverlap === overlapRight) {
+                        // Hit from right
+                        player.x = platform.x + platform.width;
+                        player.vx = 0;
+                    }
+                }
+            });
+        }
+
+        function checkLedgeGrab() {
+            if (player.state === PlayerState.HANGING || player.state === PlayerState.CLIMBING) {
+                return;
+            }
+
+            if (player.vy <= 0) return; // Only check when falling/moving down
+
+            // Check each platform for ledge grab opportunity
+            for (let platform of platforms) {
+                const playerHandsY = player.y; // Top of player character (hands position)
+                const playerCenterX = player.x + player.width / 2;
+
+                // Check if hands are at platform level
+                if (playerHandsY >= platform.y - 5 && playerHandsY <= platform.y + 10) {
+                    // Check if trying to grab left edge
+                    if (player.vx < 0 && playerCenterX >= platform.x - 10 && playerCenterX <= platform.x + 10) {
+                        // Grab left edge
+                        player.state = PlayerState.HANGING;
+                        player.hangingPlatform = platform;
+                        player.x = platform.x - player.width;
+                        player.y = platform.y;
+                        player.vy = 0;
+                        player.vx = 0;
+                        player.facingRight = true;
+                        player.hangOffsetX = 0;
+                        return true;
+                    }
+                    // Check if trying to grab right edge
+                    else if (player.vx > 0 && playerCenterX >= platform.x + platform.width - 10 && playerCenterX <= platform.x + platform.width + 10) {
+                        // Grab right edge
+                        player.state = PlayerState.HANGING;
+                        player.hangingPlatform = platform;
+                        player.x = platform.x + platform.width;
+                        player.y = platform.y;
+                        player.vy = 0;
+                        player.vx = 0;
+                        player.facingRight = false;
+                        player.hangOffsetX = 0;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkSpikeCollision() {
+            spikes.forEach(spike => {
+                if (checkCollision(player, spike)) {
+                    resetLevel();
+                }
+            });
+        }
+
+        function checkDoorCollision() {
+            if (!door.reached && checkCollision(player, door)) {
+                door.reached = true;
+                messageDiv.textContent = '🎉 LEVEL COMPLETE! Hugo escaped the dungeon!';
+                setTimeout(() => {
+                    messageDiv.textContent = 'Press F5 to play again';
+                }, 2000);
+            }
+        }
+
+        // ==================== GAME LOGIC ====================
+        function resetLevel() {
+            player.x = 100;
+            player.y = 450;
+            player.vx = 0;
+            player.vy = 0;
+            player.state = PlayerState.IDLE;
+            player.grounded = false;
+            player.hangingPlatform = null;
+            door.reached = false;
+            messageDiv.textContent = '💀 Ouch! Try again...';
+            setTimeout(() => {
+                messageDiv.textContent = '';
+            }, 1500);
+        }
+
+        function updatePlayer() {
+            if (door.reached) return; // Stop movement when level complete
+
+            // Handle different player states
+            switch (player.state) {
+                case PlayerState.HANGING:
+                    // Can only climb up or drop down
+                    if (keys.up) {
+                        player.state = PlayerState.CLIMBING;
+                        player.hangOffsetX = 0;
+                    } else if (keys.space) {
+                        // Drop down
+                        player.state = PlayerState.FALLING;
+                        player.hangingPlatform = null;
+                        player.vy = 1;
+                    }
+                    break;
+
+                case PlayerState.CLIMBING:
+                    // Animate climbing up
+                    player.y -= CLIMB_SPEED;
+                    player.hangOffsetX += CLIMB_SPEED;
+
+                    // When fully climbed
+                    if (player.hangOffsetX >= player.height) {
+                        player.state = PlayerState.IDLE;
+                        player.y = player.hangingPlatform.y - player.height;
+                        if (player.facingRight) {
+                            player.x = player.hangingPlatform.x;
+                        } else {
+                            player.x = player.hangingPlatform.x + player.hangingPlatform.width - player.width;
+                        }
+                        player.hangingPlatform = null;
+                        player.grounded = true;
+                    }
+                    break;
+
+                default:
+                    // Normal movement and jumping
+                    const control = player.grounded ? 1 : AIR_CONTROL;
+
+                    if (keys.left) {
+                        player.vx -= ACCELERATION * control;
+                        player.facingRight = false;
+                        if (player.grounded) player.state = PlayerState.RUNNING;
+                    } else if (keys.right) {
+                        player.vx += ACCELERATION * control;
+                        player.facingRight = true;
+                        if (player.grounded) player.state = PlayerState.RUNNING;
+                    } else {
+                        if (player.grounded) player.state = PlayerState.IDLE;
+                    }
+
+                    // Apply friction
+                    player.vx *= FRICTION;
+
+                    // Clamp horizontal speed
+                    if (player.vx > MAX_SPEED) player.vx = MAX_SPEED;
+                    if (player.vx < -MAX_SPEED) player.vx = -MAX_SPEED;
+
+                    // Jump
+                    if (keys.space && player.grounded) {
+                        player.vy = JUMP_FORCE;
+                        player.state = PlayerState.JUMPING;
+                        player.grounded = false;
+                    }
+
+                    // Apply gravity
+                    player.vy += GRAVITY;
+
+                    // Terminal velocity
+                    if (player.vy > 15) player.vy = 15;
+
+                    // Update position
+                    player.x += player.vx;
+                    player.y += player.vy;
+
+                    // Update state based on vertical movement
+                    if (!player.grounded && player.vy > 0 && player.state !== PlayerState.FALLING) {
+                        player.state = PlayerState.FALLING;
+                    }
+
+                    // Check for ledge grab
+                    checkLedgeGrab();
+
+                    // Collision detection
+                    checkPlatformCollision();
+                    checkSpikeCollision();
+                    checkDoorCollision();
+
+                    // Keep player in bounds
+                    if (player.x < 0) player.x = 0;
+                    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+                    if (player.y > canvas.height) resetLevel();
+
+                    break;
+            }
+        }
+
+        // ==================== RENDERING ====================
+        function drawBackground() {
+            // Dungeon background
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Add some atmospheric brick pattern
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 1;
+            for (let y = 0; y < canvas.height; y += 30) {
+                for (let x = 0; x < canvas.width; x += 60) {
+                    ctx.strokeRect(x + (y % 60 === 0 ? 0 : 30), y, 60, 30);
+                }
+            }
+        }
+
+        function drawPlatforms() {
+            platforms.forEach(platform => {
+                // Stone platform
+                ctx.fillStyle = '#5a5a5a';
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+
+                // Brick outline
+                ctx.strokeStyle = '#3a3a3a';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+
+                // Brick pattern
+                ctx.strokeStyle = '#4a4a4a';
+                ctx.lineWidth = 1;
+                const brickWidth = 40;
+                const brickHeight = 15;
+                for (let y = 0; y < platform.height; y += brickHeight) {
+                    for (let x = 0; x < platform.width; x += brickWidth) {
+                        const offsetX = (y / brickHeight) % 2 === 0 ? 0 : brickWidth / 2;
+                        ctx.strokeRect(platform.x + x + offsetX, platform.y + y, brickWidth, brickHeight);
+                    }
+                }
+            });
+        }
+
+        function drawSpikes() {
+            spikes.forEach(spike => {
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                const spikeCount = Math.floor(spike.width / 20);
+                for (let i = 0; i < spikeCount; i++) {
+                    const x = spike.x + i * 20;
+                    ctx.moveTo(x, spike.y + spike.height);
+                    ctx.lineTo(x + 10, spike.y);
+                    ctx.lineTo(x + 20, spike.y + spike.height);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Spike outline
+                ctx.strokeStyle = '#aa0000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+        }
+
+        function drawDoor() {
+            // Golden door
+            const gradient = ctx.createLinearGradient(door.x, door.y, door.x + door.width, door.y + door.height);
+            gradient.addColorStop(0, '#FFD700');
+            gradient.addColorStop(0.5, '#FFA500');
+            gradient.addColorStop(1, '#FFD700');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(door.x, door.y, door.width, door.height);
+
+            ctx.strokeStyle = '#B8860B';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(door.x, door.y, door.width, door.height);
+
+            // Door handle
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(door.x + door.width - 8, door.y + door.height / 2 - 3, 4, 6);
+
+            // Glow effect if not reached
+            if (!door.reached) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#FFD700';
+                ctx.strokeRect(door.x, door.y, door.width, door.height);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function drawPlayer() {
+            ctx.save();
+
+            // Character color - bright blue to stand out
+            let bodyColor = '#00BFFF';
+            let outlineColor = '#0080FF';
+
+            if (player.state === PlayerState.HANGING) {
+                // Draw hanging pose
+                ctx.fillStyle = bodyColor;
+
+                // Hands/arms above platform
+                ctx.fillRect(player.x + (player.facingRight ? 0 : player.width), player.y - 8, 8, 8);
+                ctx.fillRect(player.x + (player.facingRight ? player.width - 8 : 0), player.y - 8, 8, 8);
+
+                // Body hanging down
+                ctx.fillRect(player.x + 4, player.y, player.width - 8, player.height);
+
+                // Outline
+                ctx.strokeStyle = outlineColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(player.x + 4, player.y, player.width - 8, player.height);
+
+            } else if (player.state === PlayerState.CLIMBING) {
+                // Draw climbing animation
+                const climbProgress = player.hangOffsetX / player.height;
+                const bodyY = player.y;
+
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(player.x + 4, bodyY, player.width - 8, player.height);
+
+                ctx.strokeStyle = outlineColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(player.x + 4, bodyY, player.width - 8, player.height);
+
+            } else {
+                // Normal stance
+                // Body
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+
+                // Outline
+                ctx.strokeStyle = outlineColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(player.x, player.y, player.width, player.height);
+
+                // Head (lighter blue)
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(player.x + 4, player.y + 2, player.width - 8, 12);
+
+                // Eyes (direction indicator)
+                ctx.fillStyle = '#000';
+                const eyeX = player.facingRight ? player.x + player.width - 8 : player.x + 4;
+                ctx.fillRect(eyeX, player.y + 6, 3, 3);
+
+                // Legs
+                ctx.fillStyle = '#0080FF';
+                ctx.fillRect(player.x + 4, player.y + player.height - 12, 7, 12);
+                ctx.fillRect(player.x + player.width - 11, player.y + player.height - 12, 7, 12);
+            }
+
+            ctx.restore();
+        }
+
+        function drawUI() {
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Courier New';
+            ctx.fillText(`State: ${player.state}`, 10, 20);
+            ctx.fillText(`Pos: (${Math.floor(player.x)}, ${Math.floor(player.y)})`, 10, 40);
+            ctx.fillText(`Vel: (${player.vx.toFixed(1)}, ${player.vy.toFixed(1)})`, 10, 60);
+
+            // Title in dungeon
+            ctx.font = 'bold 24px Courier New';
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'center';
+            ctx.fillText("HUGO'S DUNGEON", canvas.width / 2, 30);
+            ctx.textAlign = 'left';
+        }
+
+        // ==================== GAME LOOP ====================
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update
+            updatePlayer();
+
+            // Draw
+            drawBackground();
+            drawPlatforms();
+            drawSpikes();
+            drawDoor();
+            drawPlayer();
+            drawUI();
+
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== START GAME ====================
+        gameLoop();
+        messageDiv.textContent = 'Master the ledge grab to escape!';
+        setTimeout(() => {
+            messageDiv.textContent = '';
+        }, 3000);
+    </script>
+</body>
+</html>
