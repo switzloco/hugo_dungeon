@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hugo's Dungeon - Cinematic Platformer</title>
     <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -15,27 +22,210 @@
             background: #1a1a1a;
             font-family: 'Courier New', monospace;
             color: #fff;
+            overflow: hidden;
         }
+
         #gameContainer {
             text-align: center;
+            position: relative;
+            width: 100%;
+            max-width: 800px;
         }
+
         canvas {
             border: 3px solid #444;
             background: #2a2a2a;
             display: block;
             margin: 0 auto;
+            max-width: 100%;
+            height: auto;
         }
+
         #info {
             margin-top: 20px;
             font-size: 14px;
             color: #aaa;
+            padding: 0 10px;
         }
+
+        .mobile-controls {
+            display: none;
+        }
+
+        .desktop-controls {
+            display: block;
+        }
+
         #message {
             margin-top: 10px;
             font-size: 18px;
             color: #4CAF50;
             min-height: 25px;
             font-weight: bold;
+        }
+
+        /* Touch Controls */
+        #touchControls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 200px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .touch-button {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: all;
+            touch-action: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.1s;
+        }
+
+        .touch-button:active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.9);
+            transform: scale(0.95);
+        }
+
+        #btnLeft {
+            bottom: 60px;
+            left: 20px;
+            width: 70px;
+            height: 70px;
+        }
+
+        #btnRight {
+            bottom: 60px;
+            left: 110px;
+            width: 70px;
+            height: 70px;
+        }
+
+        #btnJump {
+            bottom: 60px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.4);
+            font-size: 14px;
+        }
+
+        #btnJump:active {
+            background: rgba(76, 175, 80, 0.4);
+            border-color: rgba(76, 175, 80, 0.6);
+        }
+
+        #btnClimb {
+            bottom: 150px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.4);
+            display: none;
+        }
+
+        #btnClimb:active {
+            background: rgba(33, 150, 243, 0.4);
+            border-color: rgba(33, 150, 243, 0.6);
+        }
+
+        #btnClimb.show {
+            display: flex;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            body {
+                align-items: flex-start;
+                padding-top: 10px;
+            }
+
+            #gameContainer h1 {
+                font-size: 24px;
+                margin: 10px 0;
+            }
+
+            #info {
+                font-size: 11px;
+                margin-top: 10px;
+            }
+
+            #message {
+                font-size: 14px;
+            }
+
+            #touchControls {
+                display: block;
+            }
+
+            canvas {
+                border-width: 2px;
+            }
+
+            .mobile-controls {
+                display: block;
+            }
+
+            .desktop-controls {
+                display: none;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-width: 900px) and (orientation: landscape) {
+            body {
+                padding-top: 5px;
+            }
+
+            #gameContainer h1 {
+                font-size: 20px;
+                margin: 5px 0;
+            }
+
+            #info {
+                display: none;
+            }
+
+            #touchControls {
+                height: 160px;
+            }
+
+            #btnLeft, #btnRight {
+                width: 60px;
+                height: 60px;
+                bottom: 40px;
+            }
+
+            #btnRight {
+                left: 95px;
+            }
+
+            #btnJump {
+                width: 70px;
+                height: 70px;
+                bottom: 40px;
+            }
+
+            #btnClimb {
+                width: 60px;
+                height: 60px;
+                bottom: 115px;
+            }
         }
     </style>
 </head>
@@ -45,9 +235,18 @@
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div id="message"></div>
         <div id="info">
-            <p><strong>Controls:</strong> Arrow Keys to Move | SPACE to Jump | UP while hanging to Climb</p>
+            <p class="desktop-controls"><strong>Controls:</strong> Arrow Keys to Move | SPACE to Jump | UP while hanging to Climb</p>
+            <p class="mobile-controls"><strong>Controls:</strong> Use on-screen buttons to move and jump!</p>
             <p><strong>Objective:</strong> Reach the golden door! Avoid spikes! Master the ledge grab!</p>
         </div>
+    </div>
+
+    <!-- Touch Controls for Mobile -->
+    <div id="touchControls">
+        <div class="touch-button" id="btnLeft">←</div>
+        <div class="touch-button" id="btnRight">→</div>
+        <div class="touch-button" id="btnJump">JUMP</div>
+        <div class="touch-button" id="btnClimb">↑</div>
     </div>
 
     <script>
@@ -149,6 +348,41 @@
             if (e.key === 'ArrowUp') keys.up = false;
             if (e.key === ' ') keys.space = false;
         });
+
+        // ==================== TOUCH CONTROLS ====================
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnJump = document.getElementById('btnJump');
+        const btnClimb = document.getElementById('btnClimb');
+
+        // Prevent default touch behavior
+        document.body.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Helper function to set up touch button
+        function setupTouchButton(button, keyName) {
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys[keyName] = true;
+            }, { passive: false });
+
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+            }, { passive: false });
+
+            button.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+            }, { passive: false });
+        }
+
+        // Set up touch controls
+        setupTouchButton(btnLeft, 'left');
+        setupTouchButton(btnRight, 'right');
+        setupTouchButton(btnJump, 'space');
+        setupTouchButton(btnClimb, 'up');
 
         // ==================== COLLISION DETECTION ====================
         function checkCollision(rect1, rect2) {
@@ -552,6 +786,9 @@
             // Update
             updatePlayer();
 
+            // Update mobile UI
+            updateMobileUI();
+
             // Draw
             drawBackground();
             drawPlatforms();
@@ -562,6 +799,16 @@
 
             // Continue loop
             requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== MOBILE UI UPDATE ====================
+        function updateMobileUI() {
+            // Show climb button only when hanging
+            if (player.state === PlayerState.HANGING) {
+                btnClimb.classList.add('show');
+            } else {
+                btnClimb.classList.remove('show');
+            }
         }
 
         // ==================== START GAME ====================
