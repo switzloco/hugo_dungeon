@@ -609,7 +609,7 @@
                         // Grab left edge
                         player.state = PlayerState.HANGING;
                         player.hangingPlatform = platform;
-                        player.x = platform.x - player.width;
+                        player.x = platform.x - player.width + 4; // Offset so hands are at edge
                         player.y = platform.y;
                         player.vy = 0;
                         player.vx = 0;
@@ -622,7 +622,7 @@
                         // Grab right edge
                         player.state = PlayerState.HANGING;
                         player.hangingPlatform = platform;
-                        player.x = platform.x + platform.width;
+                        player.x = platform.x + platform.width - 4; // Offset so hands are at edge
                         player.y = platform.y;
                         player.vy = 0;
                         player.vx = 0;
