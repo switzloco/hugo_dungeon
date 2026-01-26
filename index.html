@@ -294,8 +294,8 @@
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
                 'TTTBBTTBBTT',
-                'TTTEEТТEETT',
-                'TTTEEТТEETT'
+                'TTTEETTEETT',
+                'TTTEETTEETT'
             ],
             run1: [
                 'TTTTHHHHTTTT',
@@ -311,9 +311,9 @@
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
-                'TTTBBТТTTTT',
-                'TTTEETТТТTT',
-                'TTТТТТBBEE',
+                'TTTBBTTTTTT',
+                'TTTEETTTTT',
+                'TTTTTTBBEE'
             ],
             run2: [
                 'TTTTHHHHTTTT',
@@ -329,8 +329,8 @@
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
-                'TTТТТТBBTT',
-                'TTТТТТEETT',
+                'TTTTTTBBTT',
+                'TTTTTTEETT',
                 'TTBBEETTTT'
             ],
             jump: [
@@ -347,9 +347,9 @@
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
-                'TTTBBTТBBTT',
-                'TTTEETTEEТT',
-                'TTTEEТТEETT'
+                'TTTBBTTBBTT',
+                'TTTEETTEET',
+                'TTTEETTEETT'
             ],
             hang: [
                 'TTSSSWWWSSTT',
@@ -367,11 +367,11 @@
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
                 'TTTBBTTBBTT',
-                'TTTEEТТEETT'
+                'TTTEETTEETT'
             ],
             climb: [
-                'TTSSТТWWSSTT',
-                'TTSSТТWWTTTT',
+                'TTSSTTWWSSTT',
+                'TTSSTTWWTTTT',
                 'TTTTHHHHTTTT',
                 'TTTHHHHHHTTT',
                 'TTTHHEEHHTT',
@@ -384,8 +384,27 @@
                 'TTTBBBBBBTT',
                 'TTTBBBBBBTT',
                 'TTTBBTTTTTT',
-                'TТТBBТТTTTT',
-                'TTTEEТТTTTT'
+                'TTTBBTTTTTT',
+                'TTTEETTTTT'
+            ],
+            // Enemy skeleton guard
+            enemy: [
+                'TTTTEEEETTT',
+                'TTTTEEEETT',
+                'TTTTEEEETTT',
+                'TTTTEEEETT',
+                'TTTGGGGGTTT',
+                'TTTGGGGGTTT',
+                'TTGGRRRGGT',
+                'TTTGRRRGTTT',
+                'TTTGRRRGTTT',
+                'TTTTGGGTTTT',
+                'TTTGGTTGGTT',
+                'TTTGGTTGGTT',
+                'TTTGGTTGGTT',
+                'TTTEETTEETT',
+                'TTTEETTEETT',
+                'TTTEETTEET'
             ]
         };
 
@@ -447,40 +466,64 @@
         };
 
         // ==================== LEVEL DATA ====================
-        const platforms = [
-            // Ground floor
-            { x: 0, y: 550, width: 300, height: 50 },
-
-            // First gap and platforms
-            { x: 400, y: 550, width: 150, height: 50 },
-            { x: 650, y: 550, width: 150, height: 50 },
-
-            // Mid-level platforms
-            { x: 200, y: 450, width: 120, height: 30 },
-            { x: 420, y: 400, width: 100, height: 30 },
-
-            // Upper platforms
-            { x: 100, y: 320, width: 150, height: 30 },
-            { x: 350, y: 280, width: 120, height: 30 },
-            { x: 580, y: 320, width: 150, height: 30 },
-
-            // Final platform with door
-            { x: 650, y: 200, width: 150, height: 30 }
+        const LEVELS = [
+            // LEVEL 1 - Tutorial Level
+            {
+                name: "The Dungeon Entrance",
+                platforms: [
+                    { x: 0, y: 550, width: 300, height: 50 },
+                    { x: 400, y: 550, width: 150, height: 50 },
+                    { x: 650, y: 550, width: 150, height: 50 },
+                    { x: 200, y: 450, width: 120, height: 30 },
+                    { x: 420, y: 400, width: 100, height: 30 },
+                    { x: 100, y: 320, width: 150, height: 30 },
+                    { x: 350, y: 280, width: 120, height: 30 },
+                    { x: 580, y: 320, width: 150, height: 30 },
+                    { x: 650, y: 200, width: 150, height: 30 }
+                ],
+                spikes: [
+                    { x: 300, y: 540, width: 100, height: 10 },
+                    { x: 550, y: 540, width: 100, height: 10 },
+                    { x: 320, y: 390, width: 100, height: 10 }
+                ],
+                door: { x: 720, y: 160, width: 30, height: 40 },
+                enemies: [],
+                playerStart: { x: 100, y: 450 }
+            },
+            // LEVEL 2 - The Guard Chambers
+            {
+                name: "The Guard Chambers",
+                platforms: [
+                    { x: 0, y: 550, width: 200, height: 50 },
+                    { x: 300, y: 550, width: 300, height: 50 },
+                    { x: 700, y: 550, width: 100, height: 50 },
+                    { x: 150, y: 450, width: 120, height: 30 },
+                    { x: 350, y: 380, width: 250, height: 30 },
+                    { x: 50, y: 310, width: 150, height: 30 },
+                    { x: 300, y: 240, width: 200, height: 30 },
+                    { x: 550, y: 310, width: 150, height: 30 },
+                    { x: 600, y: 180, width: 180, height: 30 }
+                ],
+                spikes: [
+                    { x: 200, y: 540, width: 100, height: 10 },
+                    { x: 600, y: 540, width: 100, height: 10 },
+                    { x: 200, y: 300, width: 100, height: 10 }
+                ],
+                door: { x: 700, y: 140, width: 30, height: 40 },
+                enemies: [
+                    { x: 350, y: 348, width: 22, height: 32, vx: 2, minX: 350, maxX: 550, platform: null },
+                    { x: 600, y: 148, width: 22, height: 32, vx: 1.5, minX: 600, maxX: 730, platform: null }
+                ],
+                playerStart: { x: 50, y: 450 }
+            }
         ];
 
-        const spikes = [
-            { x: 300, y: 540, width: 100, height: 10 },
-            { x: 550, y: 540, width: 100, height: 10 },
-            { x: 320, y: 390, width: 100, height: 10 }
-        ];
-
-        const door = {
-            x: 720,
-            y: 160,
-            width: 30,
-            height: 40,
-            reached: false
-        };
+        // Current level state
+        let currentLevelIndex = 0;
+        let platforms = [];
+        let spikes = [];
+        let door = {};
+        let enemies = [];
 
         // ==================== INPUT HANDLING ====================
         const keys = {
@@ -609,7 +652,7 @@
                         // Grab left edge
                         player.state = PlayerState.HANGING;
                         player.hangingPlatform = platform;
-                        player.x = platform.x - player.width;
+                        player.x = platform.x - player.width + 4; // Offset so hands are at edge
                         player.y = platform.y;
                         player.vy = 0;
                         player.vx = 0;
@@ -622,7 +665,7 @@
                         // Grab right edge
                         player.state = PlayerState.HANGING;
                         player.hangingPlatform = platform;
-                        player.x = platform.x + platform.width;
+                        player.x = platform.x + platform.width - 4; // Offset so hands are at edge
                         player.y = platform.y;
                         player.vy = 0;
                         player.vx = 0;
@@ -646,23 +689,52 @@
         function checkDoorCollision() {
             if (!door.reached && checkCollision(player, door)) {
                 door.reached = true;
-                messageDiv.textContent = '🎉 LEVEL COMPLETE! Hugo escaped the dungeon!';
-                setTimeout(() => {
-                    messageDiv.textContent = 'Press F5 to play again';
-                }, 2000);
+
+                // Check if there's a next level
+                if (currentLevelIndex < LEVELS.length - 1) {
+                    messageDiv.textContent = '🎉 LEVEL COMPLETE!';
+                    setTimeout(() => {
+                        currentLevelIndex++;
+                        loadLevel(currentLevelIndex);
+                        messageDiv.textContent = `Level ${currentLevelIndex + 1}: ${LEVELS[currentLevelIndex].name}`;
+                        setTimeout(() => {
+                            messageDiv.textContent = '';
+                        }, 2000);
+                    }, 1500);
+                } else {
+                    messageDiv.textContent = '🎉 ALL LEVELS COMPLETE! Hugo escaped the dungeon!';
+                    setTimeout(() => {
+                        messageDiv.textContent = 'Press F5 to play again';
+                    }, 2000);
+                }
             }
         }
 
         // ==================== GAME LOGIC ====================
-        function resetLevel() {
-            player.x = 100;
-            player.y = 450;
+        function loadLevel(levelIndex) {
+            const level = LEVELS[levelIndex];
+
+            // Load level data
+            platforms = JSON.parse(JSON.stringify(level.platforms));
+            spikes = JSON.parse(JSON.stringify(level.spikes));
+            door = JSON.parse(JSON.stringify(level.door));
+            door.reached = false;
+
+            // Load enemies (deep copy)
+            enemies = JSON.parse(JSON.stringify(level.enemies));
+
+            // Reset player position
+            player.x = level.playerStart.x;
+            player.y = level.playerStart.y;
             player.vx = 0;
             player.vy = 0;
             player.state = PlayerState.IDLE;
             player.grounded = false;
             player.hangingPlatform = null;
-            door.reached = false;
+        }
+
+        function resetLevel() {
+            loadLevel(currentLevelIndex);
             messageDiv.textContent = '💀 Ouch! Try again...';
             setTimeout(() => {
                 messageDiv.textContent = '';
@@ -766,6 +838,24 @@
 
                     break;
             }
+        }
+
+        // ==================== ENEMY LOGIC ====================
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                // Move enemy
+                enemy.x += enemy.vx;
+
+                // Reverse direction at boundaries
+                if (enemy.x <= enemy.minX || enemy.x >= enemy.maxX) {
+                    enemy.vx *= -1;
+                }
+
+                // Check collision with player
+                if (checkCollision(player, enemy)) {
+                    resetLevel();
+                }
+            });
         }
 
         // ==================== RENDERING ====================
@@ -1003,6 +1093,14 @@
             drawSprite(sprite, player.x, player.y, 2, !player.facingRight);
         }
 
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                // Draw enemy sprite
+                const facingRight = enemy.vx > 0;
+                drawSprite(SPRITES.enemy, enemy.x, enemy.y, 2, !facingRight);
+            });
+        }
+
         function drawUI() {
             ctx.fillStyle = '#fff';
             ctx.font = '14px Courier New';
@@ -1025,6 +1123,7 @@
 
             // Update
             updatePlayer();
+            updateEnemies();
 
             // Update mobile UI
             updateMobileUI();
@@ -1034,6 +1133,7 @@
             drawPlatforms();
             drawSpikes();
             drawDoor();
+            drawEnemies();
             drawPlayer();
             drawUI();
 
@@ -1052,8 +1152,9 @@
         }
 
         // ==================== START GAME ====================
+        loadLevel(0);  // Load first level
         gameLoop();
-        messageDiv.textContent = 'Master the ledge grab to escape!';
+        messageDiv.textContent = `Level 1: ${LEVELS[0].name}`;
         setTimeout(() => {
             messageDiv.textContent = '';
         }, 3000);
