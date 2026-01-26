@@ -419,36 +419,69 @@
 
         // Sprite rendering function
         function drawSprite(sprite, x, y, scale = 2, flipX = false) {
-            const pixelSize = scale;
+            try {
+                if (!sprite) {
+                    console.error('drawSprite called with null/undefined sprite');
+                    return;
+                }
 
-            ctx.save();
+                if (DEBUG_MODE && flipX) {
+                    console.log('drawSprite with flip:', { x, y, scale, flipX, spriteWidth: sprite[0].length });
+                }
 
-            if (flipX) {
-                ctx.translate(x + sprite[0].length * pixelSize, y);
-                ctx.scale(-1, 1);
-                x = 0;
-            }
+                const pixelSize = scale;
 
-            for (let row = 0; row < sprite.length; row++) {
-                for (let col = 0; col < sprite[row].length; col++) {
-                    const colorKey = sprite[row][col];
-                    if (colorKey !== 'T') {
-                        const color = COLORS[colorKey];
-                        if (!color && DEBUG_MODE) {
-                            console.error('Unknown color key:', colorKey, 'at row', row, 'col', col, 'charCode:', colorKey.charCodeAt(0));
+                ctx.save();
+
+                if (flipX) {
+                    const translateX = x + sprite[0].length * pixelSize;
+                    if (DEBUG_MODE) {
+                        console.log('Applying flip transform:', { translateX, y });
+                    }
+                    ctx.translate(translateX, y);
+                    ctx.scale(-1, 1);
+                    x = 0;
+                }
+
+                for (let row = 0; row < sprite.length; row++) {
+                    const spriteRow = sprite[row];
+                    if (!spriteRow) {
+                        console.error('Sprite row', row, 'is undefined');
+                        continue;
+                    }
+
+                    for (let col = 0; col < spriteRow.length; col++) {
+                        const colorKey = spriteRow[col];
+                        if (colorKey !== 'T') {
+                            const color = COLORS[colorKey];
+                            if (!color) {
+                                console.error('Unknown color key:', colorKey, 'at row', row, 'col', col, 'charCode:', colorKey.charCodeAt(0));
+                                ctx.fillStyle = '#FF00FF'; // Magenta for missing colors
+                            } else {
+                                ctx.fillStyle = color;
+                            }
+                            ctx.fillRect(
+                                x + col * pixelSize,
+                                y + row * pixelSize,
+                                pixelSize,
+                                pixelSize
+                            );
                         }
-                        ctx.fillStyle = color || '#FF00FF'; // Magenta for missing colors
-                        ctx.fillRect(
-                            x + col * pixelSize,
-                            y + row * pixelSize,
-                            pixelSize,
-                            pixelSize
-                        );
                     }
                 }
-            }
 
-            ctx.restore();
+                ctx.restore();
+
+                if (DEBUG_MODE && flipX) {
+                    console.log('drawSprite completed successfully');
+                }
+            } catch (error) {
+                console.error('Error in drawSprite:', error);
+                ctx.restore(); // Make sure we restore even on error
+                // Draw error marker
+                ctx.fillStyle = '#FF00FF';
+                ctx.fillRect(x, y, 20, 20);
+            }
         }
 
         // ==================== PLAYER STATE ====================
@@ -1068,64 +1101,75 @@
         }
 
         function drawPlayer() {
-            // Update animation
-            player.animTimer++;
+            try {
+                // Update animation
+                player.animTimer++;
 
-            let sprite = SPRITES.idle;
+                let sprite = SPRITES.idle;
 
-            // Select sprite based on state
-            switch (player.state) {
-                case PlayerState.IDLE:
-                    sprite = SPRITES.idle;
-                    break;
+                // Select sprite based on state
+                switch (player.state) {
+                    case PlayerState.IDLE:
+                        sprite = SPRITES.idle;
+                        break;
 
-                case PlayerState.RUNNING:
-                    // Alternate between run frames every 8 frames
-                    if (player.animTimer % 16 < 8) {
-                        sprite = SPRITES.run1;
-                    } else {
-                        sprite = SPRITES.run2;
-                    }
-                    break;
+                    case PlayerState.RUNNING:
+                        // Alternate between run frames every 8 frames
+                        if (player.animTimer % 16 < 8) {
+                            sprite = SPRITES.run1;
+                        } else {
+                            sprite = SPRITES.run2;
+                        }
+                        break;
 
-                case PlayerState.JUMPING:
-                case PlayerState.FALLING:
-                    sprite = SPRITES.jump;
-                    break;
+                    case PlayerState.JUMPING:
+                    case PlayerState.FALLING:
+                        sprite = SPRITES.jump;
+                        break;
 
-                case PlayerState.HANGING:
-                    sprite = SPRITES.hang;
-                    break;
+                    case PlayerState.HANGING:
+                        sprite = SPRITES.hang;
+                        break;
 
-                case PlayerState.CLIMBING:
-                    sprite = SPRITES.climb;
-                    break;
-            }
+                    case PlayerState.CLIMBING:
+                        sprite = SPRITES.climb;
+                        break;
+                }
 
-            // Debug logging when moving left
-            if (keys.left && DEBUG_MODE) {
-                console.log('Moving LEFT:', {
-                    x: player.x,
-                    y: player.y,
-                    facingRight: player.facingRight,
-                    state: player.state,
-                    sprite: sprite ? 'exists' : 'MISSING',
-                    spriteRows: sprite ? sprite.length : 0
-                });
-            }
+                if (DEBUG_MODE) {
+                    console.log('drawPlayer called:', {
+                        x: player.x,
+                        y: player.y,
+                        facingRight: player.facingRight,
+                        state: player.state,
+                        flipX: !player.facingRight,
+                        sprite: sprite ? sprite[0] : 'NULL'
+                    });
+                }
 
-            // Draw the sprite (flip if facing left)
-            drawSprite(sprite, player.x, player.y, 2, !player.facingRight);
+                // Draw the sprite (flip if facing left)
+                drawSprite(sprite, player.x, player.y, 2, !player.facingRight);
 
-            // Debug: Draw hitbox
-            if (DEBUG_MODE) {
-                ctx.strokeStyle = '#00ff00';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(player.x, player.y, player.width, player.height);
+                // Debug: Draw hitbox AFTER sprite
+                if (DEBUG_MODE) {
+                    console.log('Drawing debug hitbox at', player.x, player.y);
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any transforms
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(player.x, player.y, player.width, player.height);
 
-                // Draw center point
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(player.x + player.width/2 - 2, player.y + player.height/2 - 2, 4, 4);
+                    // Draw center point
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(player.x + player.width/2 - 3, player.y + player.height/2 - 3, 6, 6);
+                    ctx.restore();
+                    console.log('Debug hitbox drawn');
+                }
+            } catch (error) {
+                console.error('Error in drawPlayer:', error);
+                // Draw emergency marker
+                ctx.fillStyle = '#FF00FF';
+                ctx.fillRect(player.x, player.y, 10, 10);
             }
         }
 
@@ -1143,6 +1187,14 @@
             ctx.fillText(`State: ${player.state}`, 10, 20);
             ctx.fillText(`Pos: (${Math.floor(player.x)}, ${Math.floor(player.y)})`, 10, 40);
             ctx.fillText(`Vel: (${player.vx.toFixed(1)}, ${player.vy.toFixed(1)})`, 10, 60);
+
+            // Debug mode indicator
+            if (DEBUG_MODE) {
+                ctx.fillStyle = '#00ff00';
+                ctx.font = 'bold 16px Courier New';
+                ctx.fillText('DEBUG MODE ON', 10, 90);
+                ctx.fillText(`Facing: ${player.facingRight ? 'RIGHT' : 'LEFT'}`, 10, 110);
+            }
 
             // Title in dungeon
             ctx.font = 'bold 24px Courier New';
