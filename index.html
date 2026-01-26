@@ -263,6 +263,15 @@
         const AIR_CONTROL = 0.8; // Good air control for precise platforming
         const CLIMB_SPEED = 3;
 
+        // Debug mode - press D to toggle
+        let DEBUG_MODE = false;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'd' || e.key === 'D') {
+                DEBUG_MODE = !DEBUG_MODE;
+                console.log('Debug mode:', DEBUG_MODE);
+            }
+        });
+
         // ==================== PIXEL ART & SPRITES ====================
         // Color palette
         const COLORS = {
@@ -424,7 +433,11 @@
                 for (let col = 0; col < sprite[row].length; col++) {
                     const colorKey = sprite[row][col];
                     if (colorKey !== 'T') {
-                        ctx.fillStyle = COLORS[colorKey];
+                        const color = COLORS[colorKey];
+                        if (!color && DEBUG_MODE) {
+                            console.error('Unknown color key:', colorKey, 'at row', row, 'col', col, 'charCode:', colorKey.charCodeAt(0));
+                        }
+                        ctx.fillStyle = color || '#FF00FF'; // Magenta for missing colors
                         ctx.fillRect(
                             x + col * pixelSize,
                             y + row * pixelSize,
@@ -1089,8 +1102,31 @@
                     break;
             }
 
+            // Debug logging when moving left
+            if (keys.left && DEBUG_MODE) {
+                console.log('Moving LEFT:', {
+                    x: player.x,
+                    y: player.y,
+                    facingRight: player.facingRight,
+                    state: player.state,
+                    sprite: sprite ? 'exists' : 'MISSING',
+                    spriteRows: sprite ? sprite.length : 0
+                });
+            }
+
             // Draw the sprite (flip if facing left)
             drawSprite(sprite, player.x, player.y, 2, !player.facingRight);
+
+            // Debug: Draw hitbox
+            if (DEBUG_MODE) {
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(player.x, player.y, player.width, player.height);
+
+                // Draw center point
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(player.x + player.width/2 - 2, player.y + player.height/2 - 2, 4, 4);
+            }
         }
 
         function drawEnemies() {
@@ -1151,10 +1187,32 @@
             }
         }
 
+        // ==================== SPRITE VALIDATION ====================
+        function validateSprites() {
+            const validKeys = Object.keys(COLORS);
+            console.log('Valid color keys:', validKeys);
+
+            for (let spriteName in SPRITES) {
+                const sprite = SPRITES[spriteName];
+                console.log(`Checking sprite: ${spriteName}`);
+
+                for (let row = 0; row < sprite.length; row++) {
+                    for (let col = 0; col < sprite[row].length; col++) {
+                        const char = sprite[row][col];
+                        if (!validKeys.includes(char)) {
+                            console.error(`❌ Invalid character in ${spriteName}[${row}][${col}]: "${char}" (charCode: ${char.charCodeAt(0)})`);
+                        }
+                    }
+                }
+            }
+            console.log('✅ Sprite validation complete');
+        }
+
         // ==================== START GAME ====================
+        validateSprites();  // Check sprites for bad characters
         loadLevel(0);  // Load first level
         gameLoop();
-        messageDiv.textContent = `Level 1: ${LEVELS[0].name}`;
+        messageDiv.textContent = `Level 1: ${LEVELS[0].name} | Press D for debug`;
         setTimeout(() => {
             messageDiv.textContent = '';
         }, 3000);
